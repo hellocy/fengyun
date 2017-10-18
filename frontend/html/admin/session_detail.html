@@ -1,0 +1,44 @@
+    <style>
+    </style>
+    <header class="bar bar-nav">
+      <a class="button button-link button-nav pull-left" href="javascript:" data-url='place_session.html'>
+        <span class="icon icon-left"></span>
+        返回
+      </a>
+      <h1 class="title"></h1>
+    </header>
+    <div class="content">
+      <div class="content-block" style="margin-bottom: 3rem;">
+          <div class="list-block">
+            <ul>
+              <li class="item-content">
+                <div class="item-inner">
+                  <div class="item-title">开场动物</div>
+                  <div class="item-after open-animal"></div>
+                </div>
+              </li>
+              <li class="item-content">
+                <div class="item-inner">
+                  <div class="item-title">开场时间</div>
+                  <div class="item-after open-time"></div>
+                </div>
+              </li>
+              <li class="item-content">
+                <div class="item-inner">
+                  <div class="item-title">倍率</div>
+                  <div class="item-after open-rate"></div>
+                </div>
+              </li>
+            </ul>
+          </div>
+      </div>
+    </div>
+    
+    <script>
+        options.initPage = function(){
+          $(".title").text(options.param.sessionName);
+          $(".open-animal").text(options.param.openAnimal);
+          $(".open-time").text(options.param.openTime);
+          $(".open-rate").text(options.param.rate);
+        }
+    </script>
