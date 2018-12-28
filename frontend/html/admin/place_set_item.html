@@ -162,7 +162,8 @@
             GLOBAL.ajax("put", '/place/saveSubject', {
               img: $("#uploaded-img").attr("src"),
               text: $("#subject-text").val(),
-              placeId: options.param.placeId
+              placeId: options.param.placeId,
+              placeName: $("#place-name").val(),
             }, function(e){
               var code = e.code;
               if(code == 200){

@@ -11,9 +11,9 @@ let func = require('../sql/func');
 module.exports = {
     
     getNotice (req, res) {
-        let date = moment().format('YYYY-M-D');
+        let date = moment().format('YYYY-MM-DD');
         let query ='select * from notice'; 
-        console.log(query);
+        console.log(pool);
         pool.query(query, function(err, rows){
             if(err){
                 res.json({code: 500, msg: 'fail', data: err});
@@ -25,8 +25,8 @@ module.exports = {
 
     addNotice (req, res) {
         let content = req.body.content;
-        let datetime = moment().format('YYYY-M-D HH:mm:ss');
-        let sql = 'insert into notice(content, datetime) values("'+content+'", "'+datetime+'")';
+        let datetime = moment().format('YYYY-MM-DD HH:mm:ss');
+        let sql = `insert into notice(content, datetime) values("${content}", "${datetime}")`;
        
         pool.query(sql, function(err, rows){
             if(err){
@@ -39,8 +39,8 @@ module.exports = {
 
     setNotice (req, res) {
         let content = req.body.content;
-        let datetime = moment().format('YYYY-M-D HH:mm:ss');
-        let sql = 'update notice set content = "' + content + '", datetime = "' + datetime + '" where id = 1';
+        let datetime = moment().format('YYYY-MM-DD HH:mm:ss');
+        let sql = `update notice set content = "${content}", datetime = "${datetime}" where id = 1`;
        
         pool.query(sql, function(err, rows){
             if(err){

@@ -82,7 +82,7 @@
           var $charge = $("#input-charge");
           var chargeVal = $charge.val();
           if(chargeVal){
-            var data = {uid: sessionStorage.uid, uname: sessionStorage.uname,  count: chargeVal};
+            var data = {uid: GLOBAL.get('uid'), uname: GLOBAL.get('uname'),  count: chargeVal};
             $.confirm('确定要充值' + chargeVal + "点吗？", function(){
               GLOBAL.ajax("post", GLOBAL.host + 'order/request', data, function(e){
                 $.alert(e.msg);

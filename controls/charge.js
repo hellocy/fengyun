@@ -70,7 +70,7 @@ module.exports = {
 
             let updateChargeQuery = 'update charge set balance = ' + balance + ', status = 1 where id=' + id;
             let updateUserQuery = 'update users set balance = ' + balance + ' where id=' + uid;
-            var record = 'insert into uorder(uid, uname, count, balance, datetime, type, optname) values('+uid+', "'+uname+'", '+count+', '+balance+', "'+moment().format('YYYY-M-D hh:mm:ss')+'", "+", "充点")';
+            var record = 'insert into uorder(uid, uname, count, balance, datetime, type, optname) values('+uid+', "'+uname+'", '+count+', '+balance+', "'+moment().format('YYYY-MM-DD HH:mm:ss')+'", "+", "充点")';
             pool.query(updateChargeQuery, function(err1, rows1){
                 pool.query(updateUserQuery, function(err2, rows2){
                     pool.query(record, function(err3, rows3){

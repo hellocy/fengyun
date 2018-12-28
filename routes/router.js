@@ -1,4 +1,4 @@
-let express = require('express');
+﻿let express = require('express');
 let animal = require('../controls/animal');
 let place = require('../controls/place');
 let user = require('../controls/user');
@@ -13,24 +13,28 @@ let api = require('../api');
 let upload = require('../utils/upload');
 let router = express.Router();
 
-//定时任务
-var schedule = require('node-schedule');
+let logger = require('../configs/logger.js');
 
-var newSessionRule = new schedule.RecurrenceRule();
+//定时任务
+let schedule = require('node-schedule');
+
+let newSessionRule02 = new schedule.RecurrenceRule();
 //每天凌晨2点整更新场次
-newSessionRule.hour = 02;
-newSessionRule.minute = 00;
-newSessionRule.second = 00;
-var j = schedule.scheduleJob(newSessionRule, function(){
-	robot.createSession();
-    console.log('场次已更新...');
+newSessionRule02.hour = 02;
+newSessionRule02.minute = 00;
+newSessionRule02.second = 00;
+let s1 = schedule.scheduleJob(newSessionRule02, function(){
+	robot.createSession02();
 });
 
-//定时任务，根据场次中设置的开场时间，每30秒检测当前时间是否有开场场次
-// setInterval(function(){
-	//robot.openSession();
-	// console.log('检测是否有场次开奖时间到...');
-// }, 15000);
+let newSessionRule13 = new schedule.RecurrenceRule();
+//每天下午13点整检查并更新场次
+newSessionRule13.hour = 13;
+newSessionRule13.minute = 00;
+newSessionRule13.second = 00;
+let s2 = schedule.scheduleJob(newSessionRule13, function(){
+	robot.createSession13();
+});
 
 // user
 router.get(api.userList, user.fetchAll);
@@ -49,8 +53,10 @@ router.post(api.userUpdate, user.update);
 router.post(api.addManager, user.addManager);
 router.post(api.updateManager, user.updateManager);
 router.post(api.searchUser, user.searchUser);
-
 router.post(api.userDelete, user.deleteOne);
+
+router.post(api.updatePwd, user.updatePwd);
+router.post(api.sendMail, user.sendMail);
 
 //authoriry
 router.get(api.fetchAll, authority.fetchAll);
@@ -63,6 +69,7 @@ router.post(api.chargeList, user.fetchAllCharge); // 充点请求
 router.post(api.chargeReq, user.chargeRequest); // 充点请求
 router.post(api.chargeAdd, user.addCharge); // 充点
 router.post(api.winRecord, user.winRecord); // 中奖记录
+router.post(api.winRanking, user.winRanking); // 中奖记录
 
 //动物
 router.get(api.animalList, animal.fetchAll);
@@ -87,6 +94,7 @@ router.put(api.setSettion3, session.setSettion3);
 router.put(api.setSettion4, session.setSettion4);
 router.post(api.getSessionInfo, session.getSessionInfo);
 router.post(api.openSession, session.openSession);
+router.post(api.getPlaceSessionHistory, session.getPlaceSessionHistory);
 
 //买点（下注）
 // router.get(api.buyList, buy.fetchAll);
@@ -95,6 +103,7 @@ router.post(api.getBuyDtl, buy.getBuyDtl);
 router.put(api.updateBuy, buy.updateBuy);
 router.post(api.getSessionBuyList, buy.getSessionBuyList);
 router.post(api.getSessionBuyAnimal, buy.getSessionBuyAnimal);
+router.post(api.getAnimalBuyTotal, buy.getAnimalBuyTotal);
 
 //公告
 router.get(api.getNotice, notice.getNotice);
@@ -105,6 +114,14 @@ router.put(api.setNotice, notice.setNotice);
 router.post(api.getMessage, message.getMessage);
 router.put(api.updateMessage, message.updateMessage);
 
+//aniroid 下载接口
+router.get(api.app, robot.getapp);
+
+//ios 下载接口
+router.get(api.getipa, robot.getipa);
+
+//查看系统内在占用的接口
+router.get(api.getOsInfo, robot.getOsInfo);
 
 
 module.exports = router;

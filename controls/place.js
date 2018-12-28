@@ -8,6 +8,8 @@ let bcrypt = require('bcryptjs');
 let func = require('../sql/func');
 let fs = require('fs');
 
+let logger = require('../configs/logger.js');
+
 module.exports = {
 
     fetchAll (req, res) {
@@ -24,12 +26,13 @@ module.exports = {
     add (req, res) {
         let placeName = req.body.placeName;
         let animalsStr = req.body.animals;
-        let createTime =  moment().format('YYYY-M-D HH:mm:ss');
-        let query = 'INSERT INTO place(name, animal, createTime) VALUES("'+placeName+'", "'+animalsStr+'", "'+createTime+'")';
+        let createTime =  moment().format('YYYY-MM-DD HH:mm:ss');
+        let query = `INSERT INTO place(name, animal, createTime, sequence) VALUES("${placeName}", "${animalsStr}", "${createTime}", 4)`;
         pool.query(query, function(err, rows){
             if(err){
                 res.json({code: 500, msg: '添加失败，请重试', data: err});
             }else{
+                logger.log('info', `地点：管理员添加了新地点：${placeName}`);
                 res.json({code: 200, msg: '添加成功！', data: rows});
             }
         })
@@ -40,11 +43,13 @@ module.exports = {
         let img = req.body.img;
         let text = req.body.text;
         let placeId = req.body.placeId;
-        let query = 'update place set subject = "' + text + '", image = "' + img + '" where id = ' + placeId;
+        let placeName = req.body.placeName;
+        let query = `update place set subject = "${text}", image = "${img}" where id = ${placeId}`;
         pool.query(query, function(err, rows){
             if(err){
                 res.json({code: 500, msg: '题目设置失败，请重试', data: err});
             }else{
+                logger.log('info', `地点：管理员设置了地点题目：${placeName}`);
                 res.json({code: 200, msg: '题目设置成功！', data: rows});
             }
         })
@@ -54,10 +59,10 @@ module.exports = {
     // 删除单个地点
     deleteOne (req, res) {
         let placeId = req.body.placeId;
-        let today = moment().format('YYYY-M-D');
+        let placeName = req.body.placeName;
+        let today = moment().format('YYYY-MM-DD');
         //如果当前地点对应的有场次，未开场，且有用户下注，则在地点删除前，将点数退还给用户
-        let getBuySql = 'select a.uId, a.uName, a.amount, a.balance from buy a left join session b on a.sessionId = b.id where a.placeId = ' + placeId + ' and b.status = 0 and b.date = "' + today + '"';
-        console.log(getBuySql)
+        let getBuySql = `select a.uId, a.uName, a.amount, a.balance from buy a left join session b on a.sessionId = b.id where a.placeId = ${placeId} and b.status = 0 and b.date = "${today}"`;
         pool.query(getBuySql, function(err, buys){
             console.log(buys, "buys")
             if(buys.length){
@@ -71,7 +76,7 @@ module.exports = {
                     uidsArr.push(buys[i].uId);
                 }
 
-                let getUsersBanalce = 'select id, balance from users where id in (' + uidsArr.join(",") + ')';
+                let getUsersBanalce = `select id, balance from users where id in (${uidsArr.join(",")})`;
                 console.log(getUsersBanalce);
                 pool.query(getUsersBanalce, function(err, rows){
                     if(err){
@@ -96,32 +101,33 @@ module.exports = {
 
                         console.log(caseArr, '将要更新的用户余额信息');
 
-                        let updateUserBanalce = 'update users set balance = case id ' + caseArr.join(" ") +' end where id in (' + uidArr.join(",") + ')';
+                        let updateUserBanalce = `update users set balance = case id ${caseArr.join(" ")} end where id in (${uidArr.join(",")})`;
                         console.log(updateUserBanalce, '更新用户余额sql');
                         // return;
                         pool.query(updateUserBanalce, function(err, rows){
                             if(err){
                                 res.json({code: 500, msg: 'fail', data: err});
                             }else{
-                                let delBuySql = 'delete from buy where placeId = ' + placeId;
+                                let delBuySql = `delete from buy where placeId = ${placeId}`;
                                 pool.query(delBuySql, function(err, rows){
                                     if(err){
                                         res.json({code: 500, msg: 'fail', data: err});
                                     }
                                 })
 
-                                let delSessionSql = 'delete from session where placeId = ' + placeId;
+                                let delSessionSql = `delete from session where placeId = ${placeId}`;
                                 pool.query(delSessionSql, function(err, rows){
                                     if(err){
                                         res.json({code: 500, msg: 'fail', data: err});
                                     }
                                 })
 
-                                let delPlaceSql = 'DELETE FROM place WHERE id = ' + placeId;
+                                let delPlaceSql = `DELETE FROM place WHERE id = ${placeId}`;
                                 pool.query(delPlaceSql, function(err, rows){
                                     if(err){
                                         res.json({code: 500, msg: '地点删除失败，请重试', data: err});
                                     }else{
+                                        logger.log('info', `地点：管理员删除了地点：${placeName}, 用户已返点`);
                                         res.json({code: 200, msg: 'ok', data: rows});
                                     }
                                 })
@@ -130,11 +136,12 @@ module.exports = {
                     }
                 })
             }else{
-                let delPlaceSql = 'DELETE FROM place WHERE id = ' + placeId;
+                let delPlaceSql = `DELETE FROM place WHERE id = ${placeId}`;
                 pool.query(delPlaceSql, function(err, rows){
                     if(err){
                         res.json({code: 500, msg: '地点删除失败，请重试', data: err});
                     }else{
+                        logger.log('info', `地点：管理员删除了地点：${placeName}`);
                         res.json({code: 200, msg: 'ok', data: rows});
                     }
                 })
@@ -145,7 +152,7 @@ module.exports = {
     // 查询地点详情
     getPlaceDtl (req, res) {
         let placeId = req.body.placeId;
-        pool.query('SELECT * from place where id = ' + placeId, function(err, rows){
+        pool.query(`SELECT * from place where id = ${placeId}`, function(err, rows){
             if(err){
                 res.json({code: 500, msg: '查询失败：' + err});
             }else{
@@ -168,11 +175,11 @@ module.exports = {
         let placeId = req.body.id;
         let placeName = req.body.placeName;
         let animals = req.body.animals;
-        let sql = 'update place set name = "' + placeName + '", animal = "' + animals + '" where id = ' + placeId
+        let sql = `update place set name = "${placeName}", animal = "${animals}" where id = ${placeId}`
         console.log(sql)
         pool.query(sql, function(err, rows){
             if(err){
-                res.json({code: 500, msg: '修改失败：' + err});
+                res.json({code: 500, msg: `修改失败：${err}`});
             }else{
                 res.json({code: 200, msg: '修改成功'}); 
             }
@@ -194,12 +201,12 @@ module.exports = {
         // var dest = fs.createWriteStream(target_path);
         // src.pipe(dest);
         // src.on('end', function() { 
-            let t = moment().format('YYYY-M-D');
-            let imgUrl = '/images/uploads/' + t + '/' + req.file.filename
+            let t = moment().format('YYYY-MM-DD');
+            let imgUrl = `/images/uploads/${t}/${req.file.filename}`;
             res.json({code: 200, msg: '上传成功！', data: imgUrl});
         // });
         src.on('error', function(err) { 
-            res.json({code: 500, msg: '上传失败：' + err}); 
+            res.json({code: 500, msg: `上传失败：${err}`}); 
         });
     }
 

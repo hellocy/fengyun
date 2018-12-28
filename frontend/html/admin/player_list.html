@@ -3,8 +3,8 @@
       .grid-player{
         text-align: center;
       }
-      .content-block{
-        margin-bottom: 3.75rem;
+      .grid-player{
+        margin-bottom: 3rem;
       }
       .item{
         padding: 10px 0;
@@ -14,13 +14,16 @@
         font-size:12px;
         color:#555;
       }
+      img{
+        border-radius: .2rem;
+      }
     </style>
     <header class="bar bar-nav">
       <a class="button button-link button-nav pull-left" data-url="index.html">
         <span class="icon icon-left"></span>
         返回
       </a>
-      <h1 class="title">所有用户</h1>
+      <h1 class="title">所有用户（<span class="user-total"></span>）</h1>
     </header>
     <div class="content">
       <div class="content-padded grid-player">
@@ -39,8 +42,10 @@
           var users = e.data;
 
           if(code == 200){
+            var userLen = users.length;
             var html = '<div class="row">';
-            for(var i = 0; i < users.length; i++){
+            $(".user-total").text(userLen - 1)
+            for(var i = 0; i < userLen; i++){
               var head = users[i].headImg;
               var id = users[i].id;
               var user_name = users[i].user_name;

@@ -41,7 +41,8 @@
 
           $(".list-block ul").on("click", '.item-content', function(){
             options.param.placeId = $(this).data('id');
-            GLOBAL.go('place_set_item.html');
+            options.param.placeIName = $(this).find('.item-title').text();
+            GLOBAL.go('place_set_animal.html');
           })
 
           $(".tab-item.active").removeClass("active");

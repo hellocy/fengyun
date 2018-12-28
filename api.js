@@ -18,6 +18,7 @@ module.exports = {
     getBalance: path + 'user/getBalance',
     getMoney: path + 'user/getMoney',
     winRecord: path + 'user/winRecord',
+    winRanking: path + 'user/winRanking',
     userDelete: path + 'user/delete',
     userAdd: path + 'user/add',
     userReg: path + 'user/reg',
@@ -26,6 +27,8 @@ module.exports = {
     userDeleteMulti: path + 'user/delete-multi',
     userLogin: path + 'user/login',
     userLogout: path + 'user/logout',
+    updatePwd: path + 'user/updatePwd',
+    sendMail: path + 'user/sendMail',
     userAutoLogin: path + 'user/auto-login',
     userChangeRole: path + 'user/change-role',
     searchUser: path + 'user/searchUser',
@@ -69,14 +72,17 @@ module.exports = {
     setSettion4: path + 'session/setSettion4', //禁止买入的动物
     getSessionInfo: path + 'session/getSessionInfo', //获取开奖时间
     openSession: path + 'session/openSession', //获取开奖时间
+    getPlaceSessionHistory: path + 'session/getPlaceSessionHistory', //获取开奖时间
 
     //买点（下注）
     buyList: path + 'buy/list', //获取所有下注列表
     buyAdd: path + 'buy/addOne', //新增一条购买记录
     getBuyDtl: path + 'buy/getBuyDtl', //获取用户购买详情
     updateBuy: path + 'buy/updateBuy', //更新用户购买详情
-    getSessionBuyList: path + 'buy/getSessionBuyList', //更新用户购买详情
-    getSessionBuyAnimal: path + 'buy/getSessionBuyAnimal', //更新用户购买详情
+    getSessionBuyList: path + 'buy/getSessionBuyList', //获取用户购买列表
+    getSessionBuyAnimal: path + 'buy/getSessionBuyAnimal', //获取用户购买详情
+
+    getAnimalBuyTotal: path + 'buy/getAnimalBuyTotal', //更新用户购买详情
 
     //公告
     addNotice: path + 'notice/addNotice', //添加公告
@@ -86,5 +92,11 @@ module.exports = {
     //消息
     getMessage: path + 'message/getMessage', //获取消息
     updateMessage: path + 'message/updateMessage', //更新消息状态
+
+    //下载
+    app: path + 'getapp',
+    getipa: path + 'getipa',
+    
+    getOsInfo: path + 'getOsInfo'
 
 };

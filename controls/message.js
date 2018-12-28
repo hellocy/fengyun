@@ -13,8 +13,8 @@ module.exports = {
     
     getMessage (req, res) {
         let uid = req.body.uid;
-        let date = moment().format('YYYY-M-D');
-        let query ='select * from message where msg_to = ' + uid + ' and msg_status = 0 order by id desc'; 
+        let date = moment().format('YYYY-MM-DD');
+        let query = `select * from message where msg_to = ${uid} and msg_status = 0 order by id desc`; 
         console.log(query);
         pool.query(query, function(err, rows){
             if(err){
@@ -27,7 +27,7 @@ module.exports = {
 
     updateMessage (req, res) {
         let msgId = req.body.msgId;
-        let sql = 'update message set msg_status = 1 where id = ' + msgId;
+        let sql = `update message set msg_status = 1 where id = ${msgId}`;
        
         pool.query(sql, function(err, rows){
             if(err){

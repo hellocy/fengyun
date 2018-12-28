@@ -7,6 +7,12 @@ let moment = require('moment');
 let bcrypt = require('bcryptjs');
 let func = require('../sql/func');
 
+const crypto = require("crypto");
+
+var nodemailer = require("nodemailer");
+
+let logger = require('../configs/logger.js');
+
 function getTime(){
     var currDate = new Date();
     var d = new Date();
@@ -29,7 +35,7 @@ module.exports = {
 
     searchUser (req, res) {
         var keyword = req.body.keyword;
-        pool.query('select * from users where user_name like "%' + keyword + '%" or mail like "%' + keyword + '%" and id != 1', function(err, rows){
+        pool.query(`select * from users where user_name like "%${keyword}%" or mail like "%${keyword}%" and id != 1`, function(err, rows){
             if(err){
                 res.json({code: 500, msg: 'fail', data: err});
             }else{
@@ -56,7 +62,7 @@ module.exports = {
         let pwd = req.body.pwd;
         let headImg = req.body.headImg;
         let role = 0;
-        let joinTime = moment().format('YYYY-M-D HH:mm:ss');
+        let joinTime = moment().format('YYYY-MM-DD HH:mm:ss');
         let balance = 0;
         let query = 'INSERT INTO users(user_name, mail, pwd, role, joinTime, headImg, balance) VALUES(?, ?, ?, ?, ?, ?, ?)';
 
@@ -93,8 +99,12 @@ module.exports = {
         let headImg = req.body.headImg;
         let authority = req.body.authority;
         let role = 2;
-        let joinTime = moment().format('YYYY-M-D HH:mm:ss');
+        let joinTime = moment().format('YYYY-MM-DD HH:mm:ss');
         let balance = 10000;
+
+        let md5 = crypto.createHash("md5");
+        let newPas = md5.update(pwd).digest("hex");
+
         let query = 'INSERT INTO users(user_name, mail, pwd, role, joinTime, headImg, balance, authority) VALUES(?, ?, ?, ?, ?, ?, ?, ?)';
 
         //将用户信息写入db
@@ -112,7 +122,11 @@ module.exports = {
         let pwd = req.body.pwd;
         let headImg = req.body.headImg;
         let authority = req.body.authority;
-        let query = 'update users set user_name = "'+cnName+'", mail = "'+email+'", pwd="'+pwd+'", headImg="'+headImg+'", authority="'+authority+'" where id=' + uid;
+
+        let md5 = crypto.createHash("md5");
+        let newPas = md5.update(pwd).digest("hex");
+
+        let query = `update users set user_name = "${cnName}", mail = "${email}", pwd="${pwd}", headImg="${headImg}", authority="${authority}" where id=${uid}`;
 
         pool.query(query, function(err, rows){
             if(err){
@@ -125,7 +139,7 @@ module.exports = {
 
     getBalance (req, res) {
         let uid = req.body.uId;
-        let query = 'select balance from users where id = ' + uid;
+        let query = `select balance from users where id = ${uid}`;
         console.log(query)
         pool.query(query, function(err, rows){
             if(err){
@@ -139,7 +153,7 @@ module.exports = {
     fetchAllCharge (req, res) {
         let status = req.body.status;
         var condition = status == 2 ? '' : ' where a.status = ' + status;
-        pool.query('select a.*, b.headImg from charge a left join users b on a.uid = b.id' + condition + ' order by a.id desc', function(err, rows){
+        pool.query(`select a.*, b.headImg from charge a left join users b on a.uid = b.id ${condition} order by a.id desc`, function(err, rows){
             if(err){
                 res.json({code: 500, msg: 'fail', data: err});
             }else{
@@ -155,7 +169,7 @@ module.exports = {
         if(optname){
             condition = 'optname="充点" and'
         }
-        pool.query('select * from uorder where ' + condition + ' uid = ' + uid + ' order by id desc ', function(err, rows){
+        pool.query(`select * from uorder where ${condition} uid = ${uid} order by id desc`, function(err, rows){
             if(err){
                 res.json({code: 500, msg: 'fail', data: err});
             }else{
@@ -167,7 +181,23 @@ module.exports = {
     //中奖记录
     winRecord (req, res) {
         let uid = req.body.uid;
-        pool.query('select * from uorder where uid = ' + uid + ' and optname = "中奖" and count > 0 order by id desc limit 10', function(err, rows){
+        let query =`select * from uorder where uid = ${uid} and optname = "中奖" and count > 0 order by id desc limit 10`;
+        console.log(query);
+        pool.query(query, function(err, rows){
+            if(err){
+                res.json({code: 500, msg: '获取中奖信息失败, 请重试', data: err});
+            }else{
+                res.json({code: 200, msg: 'ok', data: rows});
+            }
+        })
+    },
+
+    //中奖排行榜
+    winRanking (req, res) {
+        let condition = req.body.time == 'week' ? "YEARWEEK(DATE_FORMAT(datetime,'%Y-%m-%d'))=YEARWEEK(NOW())" : "DATE_FORMAT(datetime,'%Y%m')=DATE_FORMAT(CURDATE(),'%Y%m')";
+        let query =`select uname, sum(count) as total from uorder where  ${condition} and optname = '中奖' GROUP BY uname order by total desc`;
+        console.log(query)
+        pool.query(query, function(err, rows){
             if(err){
                 res.json({code: 500, msg: '获取中奖信息失败, 请重试', data: err});
             }else{
@@ -181,7 +211,7 @@ module.exports = {
         let uid = req.body.uid;
         let uname = req.body.uname;
         let count = req.body.count;
-        let datetime = moment().format('YYYY-M-D HH:mm:ss');
+        let datetime = moment().format('YYYY-MM-DD HH:mm:ss');
         let insertQuery = 'INSERT INTO charge(uid, uname, count, chargeTime, status) VALUES(' + uid + ', "' + uname + '", ' + count + ', "' + datetime + '", 0)';
         
         pool.query(insertQuery, function(err, rows){
@@ -208,25 +238,26 @@ module.exports = {
         let uname = req.body.uname;
         let count = req.body.count;
 
-        pool.query('select balance from users where id='+uid, function(err, rows){
+        pool.query(`select balance from users where id=${uid}`, function(err, rows){
             var balance = parseInt(rows[0].balance) + parseInt(count);
 
             // let updateChargeQuery = 'update charge set balance = ' + balance + ', status = 1 where id=' + id;
-            let updateUserQuery = 'update users set balance = ' + balance + ' where id=' + uid;
-            var record = 'insert into uorder(uid, uname, count, balance, datetime, type, optname) values('+uid+', "'+uname+'", '+count+', '+balance+', "'+moment().format('YYYY-M-D hh:mm:ss')+'", "+", "充点")';
+            let updateUserQuery = `update users set balance = ${balance} where id=${uid}`;
+            var record = `insert into uorder(uid, uname, count, balance, datetime, type, optname) values(${uid}, "${uname}", ${count}, ${balance}, "${moment().format('YYYY-MM-DD HH:mm:ss')}", "+", "充点")`;
             pool.query(updateUserQuery, function(err2, rows2){
                 pool.query(record, function(err3, rows3){
                     if(err){
                         res.json({code: 500, msg: '充值失败，请重试', data: err3});
                     }else{
-                        let datetime = moment().format('YYYY-M-D HH:mm:ss');
-                        let messageQuery = 'INSERT INTO message(msg_status, content, msg_to, datetime) VALUES(0, "充值成功，入账 '+count+' 点", '+uid+', "'+datetime+'")';
+                        let datetime = moment().format('YYYY-MM-DD HH:mm:ss');
+                        let messageQuery = `INSERT INTO message(msg_status, content, msg_to, datetime) VALUES(0, "充值成功，入账 ${count} 点", ${uid}, "${datetime}")`;
                         console.log(messageQuery);
                         pool.query(messageQuery, function(err, rows){
                             if(rows){
                                 res.json({code: 200, msg: '充值成功！', data: rows3});
                             }
                         })
+                        logger.log('info', `充点：管理员为用户${uname}充值 ${count} 点`);
                     }
                 })
             })
@@ -238,19 +269,20 @@ module.exports = {
         let uid = req.body.uId;
         let uname = req.body.uname;
         let cash = req.body.cash;
-        let query = 'update users set balance = balance - ' + cash + ' where id = ' + uid;
+        let query = `update users set balance = balance - ${cash} where id = ${uid}`;
         pool.query(query, function(err, rows){
             if(err){
                 res.json({code: 500, msg: 'fail', data: err});
             }else{
-                pool.query('select balance from users where id = ' + uid, function(err, rows){
+                pool.query(`select balance from users where id = ${uid}`, function(err, rows){
                     var balance = rows[0].balance;
-                    var record = 'insert into uorder(uid, uname, count, balance, date, datetime, type, optname) values('+uid+', "'+uname+'", '+cash+', '+balance+', "' + moment().format('YYYY-M-D') + '", "' + moment().format('YYYY-M-D hh:mm:ss') + '", "-", "提点")';
+                    var record = `insert into uorder(uid, uname, count, balance, date, datetime, type, optname) values(${uid}, "${uname}", ${cash}, ${balance}, "${moment().format('YYYY-MM-DD')}", "${moment().format('YYYY-MM-DD HH:mm:ss')}", "-", "提点")`;
                     console.log(record);
                     pool.query(record, function(err, rows){
                         if(err){
                             res.json({code: 500, msg: 'fail', data: err});
                         }else{
+                            logger.log('info', `提点：用户${uname}提点 ${cash}`);
                             res.json({code: 200, msg: 'ok', data: balance});
                         }
                     })
@@ -265,9 +297,9 @@ module.exports = {
         let optname = req.body.optname;
         let condition = "";
         if(optname){
-            condition = 'optname="提点" and'
+            condition = `optname="${optname}" and`;
         }
-        let sql = 'select * from uorder where ' + condition + ' uid = ' + uid + ' order by id desc ';
+        let sql = `select * from uorder where ${condition} uid = ${uid} order by id desc`;
         console.log(sql);
         pool.query(sql, function(err, rows){
             if(err){
@@ -311,31 +343,77 @@ module.exports = {
 
     // 登录
     login (req, res) {
-
-        // throw new Error("错误日志测试");
-
         let email = req.body.email;
         let pass = req.body.pwd;
-        pool.query('SELECT * from users where mail = "' + email + '"', function(err, rows){
+        let md5 = crypto.createHash("md5");
+        let newPas = md5.update(pass).digest("hex");
+        pool.query(`SELECT * from users where mail = "${email}"`, function(err, rows){
             if (!rows.length) {
-                res.json({code: 400, msg: '用户名不存在'});
+                res.json({code: 400, msg: '账号不存在'});
                 return;
             }
             let pwd = rows[0].pwd;
-            if(pass == pwd){
+            console.log(pwd, newPas)
+            if(pwd == pass){
                 let user = {
                     user_id: rows[0].id,
                     user_name: rows[0].user_name,
                     role: rows[0].role
                 };
                 req.session.login = user;
-                console.log("login write session: ", req.session.login);
+
+                logger.log('info', `用户登录：用户名：${user.user_name}, IP: ${req.ip}, 用户代理：${req.headers['user-agent']}`);
                 res.json({code: 200, msg: '登录成功', data: user});
             } else {
                 res.json({code: 400, msg: '密码错误'});
             }
         })
+    },
 
+    // 修改密码
+    updatePwd (req, res) {
+        let id = req.body.id;
+        let uname = req.body.uname;
+        let pass = req.body.newPwd;
+        let md5 = crypto.createHash("md5");
+        let newPas = md5.update(pass).digest("hex");
+        pool.query(`update users set pwd = "${pass}" where id = ${id}`, function(err, rows){
+            if (err) {
+                res.json({code: 400, msg: '密码错误'});
+            } else {
+                logger.log('info', `修改密码：用户名：${uname}, 新密码：${pass} IP: ${req.ip}, 用户代理：${req.headers['user-agent']}`);
+                res.json({code: 200, msg: '密码修改成功！', data: rows});
+            }
+        })
+    },
+
+    sendMail (req, res) {
+        // 开启一个 SMTP 连接池
+        var smtpTransport = nodemailer.createTransport("SMTP",{
+          host: "smtp.qq.com", // 主机
+          secureConnection: true, // 使用 SSL
+          port: 465, // SMTP 端口
+          auth: {
+            user: "627829480@qq.com", // 账号
+            pass: "imDarcy2016" // 密码
+          }
+        });
+        // 设置邮件内容
+        var mailOptions = {
+          from: "Fred Foo <xxxxxxxx@qq.com>", // 发件地址
+          to: "627829480@qq.com, chenyi@globalegrow.com", // 收件列表
+          subject: "Hello world", // 标题
+          html: "<b>thanks a for visiting!</b> 世界，你好！" // html 内容
+        }
+        // 发送邮件
+        smtpTransport.sendMail(mailOptions, function(error, response){
+          if(error){
+            console.log(error);
+          }else{
+            console.log("Message sent: " + response.message);
+          }
+          smtpTransport.close(); // 如果没用，关闭连接池
+        });
     },
 
     // 注册
@@ -345,25 +423,38 @@ module.exports = {
         let pwd = req.body.pwd;
         let headImg = req.body.headImg;
         let role = 0;
-        let joinTime = moment().format('YYYY-M-D HH:mm:ss');
+        let joinTime = moment().format('YYYY-MM-DD HH:mm:ss');
         let balance = 0;
 
-        let checkExisted = 'select mail from users where mail = "' + email + '"';
+        let checkNickName = `select user_name from users where user_name = "${cnName}"`;
+        let checkMail = `select mail from users where mail = "${email}"`;
 
-        pool.query(checkExisted, function(err, rows){
+        let md5 = crypto.createHash("md5");
+        let newPas = md5.update(pwd).digest("hex");
+
+        pool.query(checkNickName, function(err, rows){
             if(err){
               res.json({code: 500, msg: err, data: err});  
             }else if(rows.length){
-                res.json({code: 400, msg: '该邮箱已存在！', data: err});
-            }else{
-                let query = 'INSERT INTO users(user_name, mail, pwd, role, joinTime, headImg, balance) VALUES(?, ?, ?, ?, ?, ?, ?)';
-                //将用户信息写入db
-                let arr = [cnName, email, pwd, role, joinTime, headImg, balance];
-                func.connPool(query, arr, rows => {
-                    res.json({code: 200, msg: '注册成功，请登录'});
-                });
-            }
-        })
+               res.json({code: 400, msg: '该昵称已存在！', data: err}); 
+           }else{
+                pool.query(checkMail, function(err, rows){
+                    if(err){
+                      res.json({code: 500, msg: err, data: err});  
+                    }else if(rows.length){
+                        res.json({code: 400, msg: '该账号已存在！', data: err});
+                    }else{
+                        let query = 'INSERT INTO users(user_name, mail, pwd, role, joinTime, headImg, balance) VALUES(?, ?, ?, ?, ?, ?, ?)';
+                        //将用户信息写入db
+                        let arr = [cnName, email, pwd, role, joinTime, headImg, balance];
+                        func.connPool(query, arr, rows => {
+                            logger.log('info', `新用户注册：用户名：${cnName}, 密码：${pwd} IP: ${req.ip}, 用户代理：${req.headers['user-agent']}`);
+                            res.json({code: 200, msg: '注册成功，请登录'});
+                        });
+                    }
+                })
+           }
+        })   
     },
 
     // 查询用户详情

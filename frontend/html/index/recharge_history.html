@@ -62,7 +62,7 @@
 </div>
 <script>
   options.initPage = function(){
-    GLOBAL.ajax('post', GLOBAL.host + 'order/history', {uid: sessionStorage.uid}, function(e){
+    GLOBAL.ajax('post', '/order/history', {uid: GLOBAL.get('uid')}, function(e){
       var code = e.code;
       if(code == 200){
         var data = e.data;

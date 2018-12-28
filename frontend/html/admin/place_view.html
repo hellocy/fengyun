@@ -37,8 +37,9 @@
           $(".list-block ul").on("click", '.icon-remove', function(){
             var $this = $(this);
             var placeId = $this.closest("li").attr("data-id");
+            var placeName = $this.prev().text();
             $.confirm("确定要删除该地点吗？", '地点删除后，相关信息将全部删除', function(){
-              GLOBAL.ajax("post", '/place/delete', {placeId: placeId}, function(e){
+              GLOBAL.ajax("post", '/place/delete', {placeId: placeId, placeName: placeName}, function(e){
                 var code = e.code,
                     data = e.data;
                 if(code == 200){

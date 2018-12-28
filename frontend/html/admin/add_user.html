@@ -22,7 +22,7 @@
     <span class="icon icon-left"></span>
     返回
   </a> -->
-  <h1 class="title">添加玩家</h1>
+  <h1 class="title">设置玩家</h1>
 </header>
 <div class="content">
   <div class="list-block">
@@ -192,5 +192,8 @@
         $.alert("输入不完整！");
       }
     })
+
+    $(".tab-item.active").removeClass("active");
+    $(".tab-item").eq(1).addClass("active");
   }
 </script>

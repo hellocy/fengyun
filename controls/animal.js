@@ -22,7 +22,7 @@ module.exports = {
     // 充值
     add (req, res) {
         let name = req.body.name;
-        let sql = 'insert into animals(aniCnName) values("' + name + '")';
+        let sql = `insert into animals(aniCnName) values("${name}")`;
         pool.query(sql, function(err, rows){
             if(err){
                 res.json({code: 500, msg: '添加失败！', data: err});

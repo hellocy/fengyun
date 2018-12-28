@@ -30,7 +30,7 @@
                   <div class="item-content">
                     <div class="item-media"><i class="icon icon-form-email"></i></div>
                     <div class="item-inner">
-                      <div class="item-title label">中文名称: </div>
+                      <div class="item-title label">昵&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;称</div>
                       <div class="item-input">
                         <input type="text" id="cnName">
                       </div>
@@ -41,7 +41,7 @@
                   <div class="item-content">
                     <div class="item-media"><i class="icon icon-form-email"></i></div>
                     <div class="item-inner">
-                      <div class="item-title label">邮&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;箱</div>
+                      <div class="item-title label">账&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;号</div>
                       <div class="item-input">
                         <input type="email" id="email">
                       </div>
@@ -177,11 +177,15 @@
         });
 
         $(".button-success").click(function(){
-          var cnName = $("#cnName").val();
-          var email = $("#email").val();
-          var pwd = $("#pwd").val();
+          var cnName = $.trim($("#cnName").val());
+          var email = $.trim($("#email").val());
+          var pwd = $.trim($("#pwd").val());
           var headImg = $(".user-head img.active").attr("data-img-name") || '0.jpg';
           if(cnName && email && pwd){
+            if(!/^[A-Za-z0-9@\.]+$/.test(email)){
+              $.alert('账号只能输入字母、数字或邮箱格式');
+              return;
+            }
             var data = {
                   cnName: cnName, 
                   email: email, 

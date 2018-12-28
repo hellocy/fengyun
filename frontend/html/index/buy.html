@@ -1,6 +1,16 @@
   <style>
-    .place-subject{
-      margin:.5rem 0;
+    #place-subject{
+      text-align:left;
+      font-size:.7rem;
+      padding:.5rem;
+      box-shadow:  0 0 1rem rgba(0,0,0,.1) inset
+    }
+    .timer{
+      padding:.3rem;
+      margin:.3rem;
+      font-size: .75rem;
+      text-align: center;
+      border:1px dashed #ccc;
     }
   </style>
   <header class="bar bar-nav">
@@ -8,13 +18,13 @@
         <span class="icon icon-left"></span>
         返回
       </a>
-    <h1 class="title"><span class="place-name"></span>今日第<span class="sequence"></span>场</h1>
+    <h1 class="title"><span class="session-name"></span></h1>
   </header>
   <div class="content">
-    <p class="timer">距离开场还有：00小时00分00秒</p>
-    <div style="padding:.5rem; text-align:center;">
+    <p class="timer" style="">距离开场还有：00小时00分00秒</p>
+    <div style="padding:.3rem; text-align:center;">
       <img src="" id="place-img" style="width:100%;display: none">
-      <div id="place-subject" style="text-align:left;font-size:.75rem;"></div>
+      <div id="place-subject" style=""></div>
     </div>
     <div class="list-block" style="margin:0.75rem 0;">
       <ul></ul>
@@ -32,7 +42,6 @@
       if(timer){
         clearInterval(timer);
       }
-
       var sessionName = options.param.sessionName;
       var sessionId = options.param.sessionId;
 
@@ -42,19 +51,33 @@
       var maxAniCount = 0;
       
       var isOpenSoon = false;
+      var isOpened = false;
+
+      var uBalance = 0;
+
+      $('.session-name').text(sessionName);
+
+      GLOBAL.ajax('post', '/user/getBalance', {uId: GLOBAL.get('uid')}, function(e){
+        var rCode =  e.code;
+        if(rCode == 200){
+          uBalance = e.data
+        }
+      })
 
       GLOBAL.ajax('post', '/session/getSessionInfo', {sessionId: sessionId}, function(e){
         var data = e.data;
         var openTime = data.openTime;
         forbidAniArr = (data.forbiddenAni || "").split(",");
         maxAniCount = data.aniMaxCount;
-        if(e.data.openTime){
+        if(openTime){
           timer = setInterval(function(){
             var now = Date.now();
-            var end = new Date(e.data.openTime).getTime();
+            var end = new Date(openTime.replace(/-/g, "/")).getTime();
+            
             var disTime = end - now;
             if(disTime <= 0){
-              $(".timer").html('<span style="padding:.5rem;color:#888">本场已结束</span>');
+              isOpened = true;
+              $(".timer").html('<span style="padding:.5rem;color:#888">开场时间已到</span>');
               clearInterval(timer);
               return;
             }
@@ -73,7 +96,6 @@
             //计算相差秒数
             var leave3=leave2%(60*1000)
             var seconds=Math.round(leave3/1000)
-
             hours = hours < 10 ? "0" + hours : hours;
             minutes = minutes < 10 ? "0" + minutes : minutes;
             seconds = seconds < 10 ? "0" + seconds : seconds;
@@ -108,7 +130,7 @@
             var placeName = data.name;
             var animals = data.animal;
             var image = data.subjectImg;
-            var subject = data.subject;
+            var subject = data.subject || '';
             var sequence = data.sequence;
             var aniArr = animals.split(",");
             var aniHtml = "";
@@ -118,9 +140,7 @@
                 $(this).show();
               })
             }
-            $("#place-subject").text(subject);
-            $(".place-name").text(placeName);
-            $(".sequence").text(sequence);
+            $("#place-subject").html(subject.replace(/\n/g,"<br/>").replace(/\s/g,"&nbsp;"));
 
             for(var i = 0; i < aniArr.length; i++){
               var aniId = aniArr[i];
@@ -130,7 +150,7 @@
             $(".list-block ul").empty().append(aniHtml);
 
             GLOBAL.ajax('post', '/buy/getBuyDtl', {
-              uId: sessionStorage.uid,
+              uId: GLOBAL.get('uid'),
               sessionId: options.param.sessionId
             }, function(e){
               var code = e.code;
@@ -160,26 +180,60 @@
                 $.alert('离开场时间不到15分钟，禁止买入');
                 return;
               }
+              if(isOpened){
+                $.alert('开场时间已过，禁止买入');
+                return;
+              }
               var $this = $(this);
               var aniId = $this.attr("data-id");
               var annimalName = $(this).find(".item-title").text();
+              var oldCount = $(this).attr("data-old-count");
+              if($.inArray(aniId, forbidAniArr) >= 0){
+                $.alert("动物满注");
+                return;
+              }
+              if($.inArray(aniId, forbidAniArr) >= 0){
+                $.alert("管理员已禁止该动物买入");
+                return;
+              }
 
-              if($.inArray(aniId, forbidAniArr) >= 0){
-                $.alert("管理员已禁止该动物买入");
-                return;
-              }
-              if($.inArray(aniId, forbidAniArr) >= 0){
-                $.alert("管理员已禁止该动物买入");
-                return;
-              }
-              var prop = $.prompt(annimalName, function (value) {
-                if(isNaN(parseInt(value))){
-                  $.alert("请输入数字");
+              // let hasBuyTotal = 0;
+              // $(".item-content").each(function(){
+              //   var count = $(this).data("count");
+              //   if(!isNaN(parseInt(count))){
+              //     hasBuyTotal += parseInt(count);
+              //   }
+              // });
+
+              // currentBalance = uBalance - hasBuyTotal;
+
+              var prop = $.prompt(annimalName + '<p style="font-size:.75rem;">(剩余点数：' + uBalance + ')</p>', function (value) {
+                if(isNaN(parseInt(value)) || value < 0){
+                  $.alert("请输入不小于0的数字");
                 }else if(value > maxAniCount){
                   $.alert("不能大于" + maxAniCount);
                 }else{
-                  $this.attr("data-count", value);
-                  $this.find(".item-after").text(value);
+
+                  var checkParam = {
+                    sessionId: sessionId,
+                    animalId: aniId,
+                    buyCount: value
+                  };
+                  if(isEdit){
+                    checkParam.isEdit = isEdit;
+                    checkParam.oldCount = oldCount;
+                  }
+
+                  GLOBAL.ajax("post", '/buy/getAnimalBuyTotal', checkParam, function(e){
+                    var code = e.code;
+                    if(code == 200){
+                      $this.attr("data-count", value);
+                      $this.find(".item-after").text(value);
+                    }else{
+                      $.alert(e.msg);
+                    }
+                  })
+                  
                 }
               });
 
@@ -194,7 +248,7 @@
         var detail = [];
         var amount = 0;
 
-        GLOBAL.ajax('post', '/user/getBalance', {uId: sessionStorage.uid}, function(e){
+        GLOBAL.ajax('post', '/user/getBalance', {uId: GLOBAL.get('uid')}, function(e){
           var rCode =  e.code;
           if(rCode == 200){
               //购买前的余额
@@ -213,10 +267,11 @@
                   detail.push({
                     id: aniId,
                     aniName: aniName,
+                    oldCount: oldCount,
                     count: count
                   })
                   oldAmount += Number(oldCount);
-                  newBalance += Number(oldCount) - Number(count);;
+                  newBalance += Number(oldCount) - Number(count);
                 }
               });
 
@@ -227,8 +282,8 @@
               }
 
               var data = {
-                    uId: sessionStorage.uid,
-                    uName: sessionStorage.uname,
+                    uId: GLOBAL.get('uid'),
+                    uName: GLOBAL.get('uname'),
                     sessionId: sessionId,
                     sessionName: sessionName,
                     placeId: options.param.placeId,

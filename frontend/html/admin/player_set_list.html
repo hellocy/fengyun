@@ -35,7 +35,7 @@
       options.initPage = function(){
         $(".grid-player").on('click', '.item', function(){
           options.param.id = $(this).data('uid');
-          GLOBAL.go("player_set_detail.html");
+          GLOBAL.go("add_user.html");
         })
 
         GLOBAL.ajax('get', GLOBAL.host + 'user/list', null, function(e){

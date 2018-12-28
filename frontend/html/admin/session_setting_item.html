@@ -156,6 +156,7 @@
         options.initPage = function(){
           var sessionName = options.param.sessionName;
           var sessionId = options.param.sessionId;
+          var placeId = options.param.placeId;
 
           var openAnimalName =  options.param.openAnimalName;
           var openAnimalId =  options.param.openAnimalId;
@@ -277,7 +278,8 @@
             GLOBAL.ajax("put", '/session/setSettion1', {
               openTime: openTime,
               rate: rate,
-              sessionId: sessionId
+              sessionId: sessionId,
+              sessionName: sessionName,
             }, function(e){
               var msg = e.msg;
               $.alert(msg);
@@ -297,20 +299,24 @@
               $.alert("请先设置开奖时间");
               return;
             }
-            GLOBAL.ajax("put", '/session/setSettion2', {
-              openAniId: openAniId,
-              openAniName: openAniName,
-              sessionId: sessionId
-            }, function(e){
+            $.confirm("确定要开奖<br>" + sessionName + "吗？", function(){
+              GLOBAL.ajax("put", '/session/setSettion2', {
+                openAniId: openAniId,
+                openAniName: openAniName,
+                sessionId: sessionId
+              }, function(e){
 
-              GLOBAL.ajax("post", '/session/openSession', {sessionId: sessionId}, function(e){
-                var code = e.code,
-                    msg = e.msg;
-                if(code == 200){
-                  $.alert(msg.join("，"));
-                  GLOBAL.go("index.html");
-                }
-              });
+                GLOBAL.ajax("post", '/session/openSession', {sessionId: sessionId, placeId: placeId}, function(e){
+                  var code = e.code,
+                      msg = e.msg;
+                  if(code == 200){
+                    $.alert(msg.join("，"));
+                    GLOBAL.go("index.html");
+                  }else{
+                    $.alert(msg);
+                  }
+                });
+              })
             })
           })
 

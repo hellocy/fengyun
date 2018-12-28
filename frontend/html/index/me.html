@@ -52,7 +52,7 @@
             <li>
               <div class="item-content">
                 <div class="item-inner">
-                  <div class="item-title">剩余点数：</div>
+                  <div class="item-title">账户余额：</div>
                   <span class="balance">2500</span>
                 </div>
               </div>
@@ -77,6 +77,9 @@
 
         <div class="content-block">
           <div class="row">
+            <div class="col-100"><a href="javascript:" class="button button-big button-fill button-dark btn-updatepwd">修改密码</a></div>
+          </div>
+          <div class="row" style="margin-top: 1rem;">
             <div class="col-100"><a href="javascript:" class="button button-big button-fill button-danger btn-quite">退出</a></div>
           </div>
         </div>
@@ -86,7 +89,7 @@
     <script>
       options.initPage = function() {
         var balance = 0;
-        GLOBAL.ajax('post', '/user/userDtl', {uid: sessionStorage.uid}, function(e){
+        GLOBAL.ajax('post', '/user/userDtl', {uid: GLOBAL.get('uid')}, function(e){
           var code = e.code;
           var data = e.data;
           if(code == 200){
@@ -104,7 +107,7 @@
         });
 
         $("#get-money").click(function(){
-          var prop = $.prompt('请输入提点金额', '账户余额：' + balance, function (value) {
+          var prop = $.prompt('请输入提点点数', '账户余额：' + balance, function (value) {
             if(value == 0){
               $.alert("请输入提点数！");
               return;
@@ -114,12 +117,12 @@
               return;
             }
             $.confirm("确定提点" + value + '吗？', function(){
-              GLOBAL.ajax("post", '/user/getMoney', {uId: sessionStorage.uid, uname: $(".myName").text(), cash: value}, function(e){
+              GLOBAL.ajax("post", '/user/getMoney', {uId: GLOBAL.get('uid'), uname: $(".myName").text(), cash: value}, function(e){
                 var code = e.code;
                 if(code == 200){
                   var rest = e.data;
                   $(".balance").text(rest);
-                  $.alert('已提点' + value + '. 请确认线下收取现金！');
+                  $.alert('已提点' + value + '. 确认线下提点收取！');
                 }
               })  
             })
@@ -128,7 +131,7 @@
         })
 
         var winHtml = '';
-        GLOBAL.ajax('post', '/user/winRecord', {uid: sessionStorage.uid}, function(e){
+        GLOBAL.ajax('post', '/user/winRecord', {uid: GLOBAL.get('uid')}, function(e){
           var code = e.code;
           var data = e.data;
           if(code == 200){
@@ -137,7 +140,9 @@
               var datetime = data[i].datetime;
               var count = data[i].count;
               var balance = data[i].balance;
-              winHtml += '<div class="card"><div class="card-header">'+sessionName+'：'+datetime.split(' ')[0].split("-").join("/")+'</div><div class="card-content"><div class="card-content-inner" id="notice-content">恭喜中奖，收益 <span style="color:#4cd964;font-size:.7rem;">'+count+'</span> 点, 余额：<span style="color:orange;font-size:.7rem;">'+balance+'</span> 点</div></div></div>';
+              var luckAniName = data[i].luckAniName;
+              var lucyAniCount = data[i].lucyAniCount;
+              winHtml += '<div class="card"><div class="card-header">'+sessionName+'：'+datetime.split(' ')[0].split("-").join("/")+'</div><div class="card-content"><div class="card-content-inner" id="notice-content">'+luckAniName+'，'+lucyAniCount+'，收益 <span style="color:#4cd964;font-size:.7rem;">'+count+'</span> 点, 余额：<span style="color:orange;font-size:.7rem;">'+balance+'</span> 点</div></div></div>';
             }
             $(".win-list-box").empty().append(winHtml);
           }else{
@@ -148,14 +153,18 @@
         $(".tab-item.active").removeClass("active");
         $(".tab-item").eq(2).addClass("active");
 
-        $(".btn-quite").click(function(){
-          $.confirm("确定要退出登录吗？", function(){            
-            sessionStorage.uid = null;
-            sessionStorage.role = null;
-            sessionStorage.uname = null;
+        $(".btn-updatepwd").click(function(){
+          GLOBAL.go("update_pwd.html");
+        })
 
-            localStorage.email = null;
-            localStorage.pwd = null;
+        $(".btn-quite").click(function(){
+          $.confirm("确定要退出登录吗？", function(){
+
+            GLOBAL.del('uid');
+            GLOBAL.del('role');
+            GLOBAL.del('uname');
+            GLOBAL.del('email');
+            GLOBAL.del('pwd');
 
             location.href = '/login.html';
           })
