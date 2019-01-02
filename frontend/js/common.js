@@ -105,6 +105,6 @@ GLOBAL.quickSort = function(arr) {
 
 　　}
 
-　　return quickSort(left).concat([pivot], quickSort(right));
+　　return GLOBAL.quickSort(left).concat([pivot], GLOBAL.quickSort(right));
 
 };
