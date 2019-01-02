@@ -79,7 +79,7 @@ GLOBAL.ajax = function(method, url, data, fn){
     })
 }
 
-Global.quickSort = function(arr) {
+GLOBAL.quickSort = function(arr) {
 
 　　if (arr.length <= 1) { return arr; }
 
