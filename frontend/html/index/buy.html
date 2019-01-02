@@ -167,6 +167,7 @@
                   $("[data-id='"+aniId+"']").attr({
                     "data-name": aniName,
                     "data-count": count,
+                    "data-input-count": count,
                     'data-old-count': count,
                   }).find(".item-after").text(count);
                 }
@@ -188,6 +189,7 @@
               var aniId = $this.attr("data-id");
               var annimalName = $(this).find(".item-title").text();
               var oldCount = $(this).attr("data-old-count");
+              var inputCount = $(this).attr("data-input-count");
               if($.inArray(aniId, forbidAniArr) >= 0){
                 $.alert("动物满注");
                 return;
@@ -208,27 +210,31 @@
               // currentBalance = uBalance - hasBuyTotal;
 
               var prop = $.prompt(annimalName + '<p style="font-size:.75rem;">(剩余点数：' + uBalance + ')</p>', function (value) {
-                if(isNaN(parseInt(value)) || value < 0){
-                  $.alert("请输入不小于0的数字");
+                var _count = inputCount ? parseFloat(value) + parseFloat(inputCount) : value;
+                if(isNaN(parseInt(value))){
+                  $.alert("只能输入数字");
                 }else if(value > maxAniCount){
                   $.alert("不能大于" + maxAniCount);
+                }else if(_count < 0){
+                    $.alert("不能小于0");
                 }else{
-
+                  
                   var checkParam = {
                     sessionId: sessionId,
                     animalId: aniId,
-                    buyCount: value
+                    buyCount: _count
                   };
                   if(isEdit){
                     checkParam.isEdit = isEdit;
-                    checkParam.oldCount = oldCount;
+                    checkParam.oldCount = _count;
                   }
 
                   GLOBAL.ajax("post", '/buy/getAnimalBuyTotal', checkParam, function(e){
                     var code = e.code;
                     if(code == 200){
-                      $this.attr("data-count", value);
-                      $this.find(".item-after").text(value);
+                      $this.attr("data-count", _count);
+                      $this.attr("data-input-count", _count);
+                      $this.find(".item-after").text(_count);
                     }else{
                       $.alert(e.msg);
                     }

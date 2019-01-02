@@ -94,7 +94,7 @@
             if(code == 200){
               var html = '';
               for(var i = 0; i < data.length; i++){
-                var usersData = JSON.parse(data[i].detail);
+                var usersData = Global.quickSort(JSON.parse(data[i].detail));
                 for(var j = 0; j < usersData.length; j++){
                   var detail = usersData[j];
                   var aniName = detail.aniName;
