@@ -108,3 +108,10 @@ GLOBAL.quickSort = function(arr) {
 　　return GLOBAL.quickSort(left).concat([pivot], GLOBAL.quickSort(right));
 
 };
+
+window.addEventListener('offline', function(){
+    $.alert("网络已断开");
+});
+window.addEventListener('online', function(){
+    $.alert("网络已连接");
+});
