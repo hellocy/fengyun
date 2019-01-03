@@ -109,6 +109,18 @@ GLOBAL.quickSort = function(arr) {
 
 };
 
+GLOBAL.session = function(key,value, isRemove){
+    if(arguments[1] && arguments[1] != 0){
+        sessionStorage.setItem(key, JSON.stringify(value));
+    } else {
+        var result = JSON.parse(sessionStorage.getItem(key));
+        if(isRemove){
+            sessionStorage.removeItem(key);
+        }
+        return JSON.parse(result);
+    }
+}
+
 window.addEventListener('offline', function(){
     $.alert("网络已断开");
 });

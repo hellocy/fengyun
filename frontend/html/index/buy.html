@@ -94,6 +94,7 @@
             //计算相差分钟数
             var leave2 = leave1 % (3600*1000)
             var minutes = Math.floor(leave2/(60*1000))
+
             if(hours == 0 && minutes <= 15){
               isOpenSoon = true;
             }
@@ -158,27 +159,29 @@
               sessionId: options.param.sessionId
             }, function(e){
               var code = e.code;
+              var detail = [];
+              var l = 0;
               if(code == 200){
-                var detail = e.data.detail;
-                var l = detail.length;
-                if(l > 0){
+                detail = e.data.detail; 
+                l = detail.length;              
+                if(detail.length > 0){
                   isEdit = true;
-                } else if (sessionStorage.bugDetailCache) {
-                  detail = sessionStorage.bugDetailCache;
-                } else {
-                  detail = [];
                 }
-                for(var i = 0; i < l; i++){
-                  var aniId = detail[i].id;
-                  var count = detail[i].count;
-                  var aniName = detail[i].aniName;
-                  $("[data-id='"+aniId+"']").attr({
-                    "data-name": aniName,
-                    "data-count": count,
-                    "data-input-count": count,
-                    'data-old-count': count,
-                  }).find(".item-after").text(count);
-                }
+              } else if (code == 405 && GLOBAL.session(sessionId)){
+                  detail = GLOBAL.session(sessionId);
+                  l = detail.length;
+              }
+              
+              for(var i = 0; i < l; i++){
+                var aniId = detail[i].id;
+                var count = detail[i].count;
+                var aniName = detail[i].aniName;
+                $("[data-id='"+aniId+"']").attr({
+                  "data-name": aniName,
+                  "data-count": count,
+                  "data-input-count": count,
+                  'data-old-count': count,
+                }).find(".item-after").text(count);
               }
             })
           }
@@ -219,7 +222,9 @@
 
               var prop = $.prompt(annimalName + '<p style="font-size:.75rem;">(剩余点数：' + uBalance + ')</p>', function (value) {
                 var _count = inputCount ? parseFloat(value) + parseFloat(inputCount) : value;
+
                 var _detail = [];
+
                 if(isNaN(parseInt(value))){
                   $.alert("只能输入数字");
                 }else if(value > maxAniCount){
@@ -227,23 +232,6 @@
                 }else if(_count < 0){
                     $.alert("不能小于0");
                 }else{
-                  $(".item-content").each(function(){
-                    var aniId = $(this).data("id");
-                    var aniName = $(this).data("name");
-                    var count = $(this).data("count");
-                    var oldCount = $(this).attr("data-old-count");
-                    if(!isNaN(parseInt(count))){
-                      amount += parseInt(count);
-                      _detail.push({
-                        id: aniId,
-                        aniName: aniName,
-                        oldCount: oldCount,
-                        count: count
-                      })
-                    }
-                  });
-
-                  sessionStorage.bugDetailCache = _detail;
                   
                   var checkParam = {
                     sessionId: sessionId,
@@ -261,6 +249,17 @@
                       $this.attr("data-count", _count);
                       $this.attr("data-input-count", _count);
                       $this.find(".item-after").text(_count);
+
+                      $(".item-content").each(function(){
+                        var aniId = $(this).data("id");
+                        var aniName = $(this).data("name");
+                        var count = $(this).data("count");
+                        var oldCount = $(this).attr("data-old-count");
+                        if(!isNaN(parseInt(count))){
+                            _detail.push('{"id": "'+aniId+'", "aniName": "'+aniName+'", "oldCount": '+oldCount+', "count": '+count+'}');
+                        }
+                      });
+                      GLOBAL.session(sessionId, '[' + _detail.toString() + ']');
                     }else{
                       $.alert(e.msg);
                     }
