@@ -85,15 +85,21 @@
 
           html += '<li class="item-content" style="margin-bottom:1rem;"><div class="item-inner"><div class="item-title">总计：</div><div class="item-after" style="font-size:1rem;">'+total+'</div></div></li>';
 
+          console.log(animals, 8888)
           var _arr = [];
           for(var n in animals){
             var _obj = {};
-            _obj[n] = animals[n]
+            _obj.name = n;
+            _obj.count = animals[n];
             _arr.push(_obj);
           }
+
+          console.log(_arr, 999)
+
           var newArr = GLOBAL.quickSort(_arr);
+
           for(var i = 0, len = newArr.length; i < len; i++){          
-            html += '<li class="item-content"><div class="item-inner"><div class="item-title">'+n+'</div><div class="item-after">'+animals[n]+'</div></div></li>';
+            html += '<li class="item-content"><div class="item-inner"><div class="item-title">'+newArr[i].name+'</div><div class="item-after">'+newArr[i].count+'</div></div></li>';
           }
 
           if(html){
