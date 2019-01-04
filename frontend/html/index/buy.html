@@ -161,15 +161,16 @@
               var code = e.code;
               var detail = [];
               var l = 0;
-              if(code == 200){
-                detail = e.data.detail; 
-                l = detail.length;              
-                if(detail.length > 0){
-                  isEdit = true;
-                }
-              } else if (code == 405 && GLOBAL.session(sessionId)){
-                  detail = GLOBAL.session(sessionId);
+              if (code == 405 || GLOBAL.session(sessionId)) {
+                detail = GLOBAL.session(sessionId);
+                l = detail.length;
+              } else if (code == 200){
+                  detail = e.data.detail; 
                   l = detail.length;
+              }
+
+              if(detail.length > 0){
+                isEdit = true;
               }
               
               for(var i = 0; i < l; i++){
@@ -307,10 +308,10 @@
               });
 
 
-              if(oldAmount == amount){
-                $.alert("数据没有变化");
-                return;
-              }
+              // if(oldAmount == amount){
+              //   $.alert("数据没有变化");
+              //   return;
+              // }
 
               var data = {
                     uId: GLOBAL.get('uid'),
@@ -334,7 +335,7 @@
                     if(code == 200){
                       GLOBAL.go("session_list.html");
                     }
-                    $.alert(msg);
+                    $.toast(msg);
                   })
                 }else{
                   $.alert('余额( ' + balance + ' )不足，请先充点！')
@@ -347,7 +348,7 @@
                     if(code == 200){
                       GLOBAL.go("session_list.html");
                     }
-                    $.alert(msg);
+                    $.toast(msg);
                   })
                 }else{
                   $.alert('余额( ' + balance + ' )不足，请先充点！')
