@@ -12,6 +12,27 @@
       text-align: center;
       border:1px dashed #ccc;
     }
+
+    .item{
+        width: 3.5rem;
+        height: 3.5rem;
+        border: 1px solid #4cd964;
+        margin: .3rem auto;
+        text-align: center;
+        border-radius: .2rem;
+        overflow:hidden;
+      }
+      .item .ani-name{
+        height:2rem;
+        line-height:2rem;
+        background: #4cd964;
+        border-bottom:1px solid #4cd964;
+        color: darkolivegreen;
+      }
+      .item .ani-count{
+        padding-top:.35rem;
+        font-size:12px;
+      }
   </style>
   <header class="bar bar-nav">
       <a class="button button-link button-nav pull-left" href="javascript:" data-url='session_list.html'>
@@ -30,7 +51,7 @@
       <img src="" id="place-img" style="width:100%;display: none">
       <div id="place-subject" style=""></div>
     </div>
-    <div class="list-block" style="margin:2.5rem 0;">
+    <div class="list-block" style="margin: 0.2rem 0 3.5rem 0;">
       <ul></ul>
     </div>
     <!-- <div class="content-block" style="margin:0.75rem 0 3rem 0;">
@@ -138,7 +159,7 @@
             var subject = data.subject || '';
             var sequence = data.sequence;
             var aniArr = animals.split(",");
-            var aniHtml = "";
+            var aniHtml = '<div class="row">';
             if(image){
               $("#place-img").attr("src", image);
               $("#place-img")[0].addEventListener('load', function(){
@@ -150,9 +171,15 @@
             for(var i = 0; i < aniArr.length; i++){
               var aniId = aniArr[i];
               var aniName = allAnimals[aniId];
-              aniHtml += '<li class="item-content item-link" data-id="'+aniId+'" data-name="'+aniName+'" data-count=""><div class="item-inner"><div class="item-title">'+aniName+'</div><div class="item-after">点击输入</div></div></li>';
+
+              aniHtml += '<div class="col-25"><div class="item" data-id="'+aniId+'" data-name="'+aniName+'" data-count=""><div class="ani-name"><strong>'+aniName+'</strong></div><div class="ani-count">点击输入</div></div></div>';
+
+              if(i != 0 && (i+1) % 4 == 0){
+                aniHtml += '</div><div class="row">';
+              }
             }
-            $(".list-block ul").empty().append(aniHtml);
+            aniHtml += '</div>';
+            $(".list-block").empty().append(aniHtml);
 
             GLOBAL.ajax('post', '/buy/getBuyDtl', {
               uId: GLOBAL.get('uid'),
@@ -182,13 +209,13 @@
                   "data-count": count,
                   "data-input-count": count,
                   'data-old-count': count,
-                }).find(".item-after").text(count);
+                }).find(".ani-count").text(count);
               }
             })
           }
 
           setTimeout(function(){
-            $(".list-block ul").on("click", ".item-content", function(){
+            $(".list-block").on("click", ".item", function(){
               if(isOpenSoon){
                 $.alert('离开场时间不到15分钟，禁止买入');
                 return;
@@ -199,7 +226,7 @@
               }
               var $this = $(this);
               var aniId = $this.attr("data-id");
-              var annimalName = $(this).find(".item-title").text();
+              var annimalName = $(this).attr('data-name');
               var oldCount = $(this).attr("data-old-count");
               var inputCount = $(this).attr("data-input-count");
               if($.inArray(aniId, forbidAniArr) >= 0){
@@ -249,9 +276,9 @@
                     if(code == 200){
                       $this.attr("data-count", _count);
                       $this.attr("data-input-count", _count);
-                      $this.find(".item-after").text(_count);
+                      $this.find(".ani-count").text(_count);
 
-                      $(".item-content").each(function(){
+                      $(".item").each(function(){
                         var aniId = $(this).data("id");
                         var aniName = $(this).data("name");
                         var count = $(this).data("count");
@@ -289,7 +316,7 @@
               var newBalance = balance;
               var editNewCount = 0;
               var oldAmount = 0;
-              $(".item-content").each(function(){
+              $(".item").each(function(){
                 var aniId = $(this).data("id");
                 var aniName = $(this).data("name");
                 var count = $(this).data("count");
