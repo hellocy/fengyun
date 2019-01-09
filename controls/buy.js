@@ -35,7 +35,6 @@ module.exports = {
         let balance = req.body.balance;
         let buildTime = moment().format('YYYY-MM-DD HH:mm:ss');
         
-
         const promise_getAniMax = new Promise(function(resolve, rejected) {
             let getAniMax = `select aniMaxCount from session where id = ${sessionId}`;
             pool.query(getAniMax, function(err, rows){
@@ -138,18 +137,8 @@ module.exports = {
                     }
                 })
             })
-        }).then(function (rows) {
-            let rate = rows[0].rate;
-            let aniMaxCount = rows[0].aniMaxCount;
-
-            let newMax = aniMaxCount;
-            let total = rows[0].currentTotal;
-            let currentTotal = Number(total) + Number(amount) - Number(oldAmount);
-            if(currentTotal > Number(rate) * Number(aniMaxCount)){
-                newMax = aniMaxCount * 1.2; 
-            }
-
-            let aniTotal = `update session set currentTotal = ${currentTotal}, aniMaxCount = ${newMax} where id = ${sessionId}`;
+        }).then(function (data) {
+            let aniTotal = `update session set currentTotal = ${data.currentTotal}, aniMaxCount = ${data.newMax} where id = ${data.sessionId}`;
             pool.query(aniTotal, function(err, rows){
                 if(err){
                     res.json({code: 500, msg: '购买失败，请重试', data: err});
