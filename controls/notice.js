@@ -12,8 +12,7 @@ module.exports = {
     
     getNotice (req, res) {
         let date = moment().format('YYYY-MM-DD');
-        let query ='select * from notice'; 
-        console.log(pool);
+        let query ='select * from notice';
         pool.query(query, function(err, rows){
             if(err){
                 res.json({code: 500, msg: 'fail', data: err});

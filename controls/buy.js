@@ -34,8 +34,125 @@ module.exports = {
         let amount = req.body.amount;
         let balance = req.body.balance;
         let buildTime = moment().format('YYYY-MM-DD HH:mm:ss');
-        let getAniMax = `select aniMaxCount from session where id = ${sessionId}`;
-        pool.query(getAniMax, function(err, rows){
+        
+
+        const promise_getAniMax = new Promise(function(resolve, rejected) {
+            let getAniMax = `select aniMaxCount from session where id = ${sessionId}`;
+            pool.query(getAniMax, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '查询失败：' + err});
+                }else if(rows.length){
+                    resolve(rows)
+                }
+            })
+        })
+
+        promise_getAniMax.then(function(rows){
+            let aniBuyDetail = {};
+            let animax = rows[0].aniMaxCount || 1000;
+            let query = `SELECT * from buy where sessionId = ${sessionId}`;
+            pool.query(query, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '查询失败：' + err});
+                }else if(rows.length >= 0){
+                    for(let i = 0; i < rows.length; i++){
+                        let detail = JSON.parse(rows[i].detail);
+                        for(let j = 0; j < detail.length; j++){
+                            let aniId = detail[j]["id"];
+                            if(aniBuyDetail.hasOwnProperty(aniId)){
+                                aniBuyDetail[aniId] = aniBuyDetail[aniId] + detail[j]["count"]
+                            }else{
+                                aniBuyDetail[aniId] = detail[j]["count"]
+                            }
+                        }
+                    }
+                    let result = [];
+                    let detailObj = JSON.parse(reqDetail);
+                    for(let i = 0; i < detailObj.length; i++){
+                        let aniId = detailObj[i]['id'];
+                        let aniName = detailObj[i]['aniName'];
+                        let reqCount = detailObj[i]['count'];
+                        let rest = animax - aniBuyDetail[aniId];
+                        if(reqCount > rest){
+                            result.push(`${aniName}剩余可购买数量：${rest}`);
+                        }
+                    }
+                    if(result.length > 0){
+                        rejected({code: 500, msg: result.join("<br>")}); 
+                    }else{
+                        resolve(rows);
+                    }
+                }
+            })
+        }).then(function (rows) {
+            let query = `INSERT INTO buy(uId, uName, placeId, sessionId, sessionName, detail, amount, buildTime, balance) VALUES(${uId}, '${uName}', ${placeId}, ${sessionId}, '${sessionName}', '${reqDetail}', ${amount}, '${buildTime}', ${balance})`;
+            pool.query(query, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '购买失败，请重试' + err, data: err});
+                }else{
+                    resolve(rows);
+                }
+            })
+        }).then(function (rows) {
+            let updateUser = `update users set balance = ${balance} where id = ${uId}`;
+            pool.query(updateUser, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '购买失败，请重试' + err, data: err});
+                }else{
+                    resolve(rows);
+                }
+            })
+        }).then(function (rows) {
+            let orderSql = `INSERT INTO uOrder(uid, uname, count, balance, datetime, type, optname, sessionName) VALUES(${uId}, "${uName}", ${amount}, ${balance}, "${buildTime}", "-", "下注", "${sessionName.split('[')[0]}")`;
+            logger.log('info', `买点：${uName}购买${sessionName} ${amount}点，剩余${balance}点`);
+            pool.query(orderSql, function(err, rows){
+                if(err){
+                    res.json({code: 500, msg: '购买失败，请重试', data: err});
+                }else{
+                    resolve(rows);
+                }
+            })
+        }).then(function (rows) {
+            let getAniTotal = `select currentTotal, rate, aniMaxCount from session where id = ${sessionId}`;
+            pool.query(getAniTotal, function(err, rows){
+                if(rows){
+                    let rate = rows[0].rate;
+                    let aniMaxCount = rows[0].aniMaxCount;
+
+                    let newMax = aniMaxCount;
+                    let total = rows[0].currentTotal;
+                    let currentTotal = Number(total) + Number(amount);
+                    if(currentTotal > Number(rate) * Number(aniMaxCount)){
+                        newMax = aniMaxCount * 1.2; 
+                    }
+                    resolve({currentTotal: currentTotal, newMax: newMax, sessionId: sessionId});
+                }
+            })
+        }).then(function (rows) {
+            let rate = rows[0].rate;
+            let aniMaxCount = rows[0].aniMaxCount;
+
+            let newMax = aniMaxCount;
+            let total = rows[0].currentTotal;
+            let currentTotal = Number(total) + Number(amount) - Number(oldAmount);
+            console.log(currentTotal, Number(rate) * Number(aniMaxCount))
+            if(currentTotal > Number(rate) * Number(aniMaxCount)){
+                newMax = aniMaxCount * 1.2; 
+            }
+
+            let aniTotal = `update session set currentTotal = ${currentTotal}, aniMaxCount = ${newMax} where id = ${sessionId}`;
+            pool.query(aniTotal, function(err, rows){
+                if(err){
+                    res.json({code: 500, msg: '购买失败，请重试', data: err});
+                }else{
+                    res.json({code: 200, msg: '购买成功！', data: rows});
+                }
+            })
+        })
+
+
+
+       /* pool.query(getAniMax, function(err, rows){
             if(err){
                 res.json({code: 500, msg: '查询失败：' + err});
             }else if(rows.length){
@@ -122,7 +239,7 @@ module.exports = {
                     }
                 })
             }
-        })
+        })*/
     },
 
     // 更新一条记录
@@ -136,6 +253,114 @@ module.exports = {
         let balance = req.body.balance;
         let reqDetail = req.body.detail;
         let buildTime = moment().format('YYYY-MM-DD HH:mm:ss');
+
+        const promise_getAniMax = new Promise(function(resolve, rejected) {
+            let getAniMax = `select aniMaxCount from session where id = ${sessionId}`;
+            pool.query(getAniMax, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '查询失败：' + err});
+                }else if(rows.length){
+                    resolve(rows)
+                }
+            })
+        })
+
+        promise_getAniMax.then(function(rows){
+            let aniBuyDetail = {};
+            let animax = rows[0].aniMaxCount || 1000;
+            let query = `SELECT * from buy where sessionId = ${sessionId}`;
+            pool.query(query, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '查询失败：' + err});
+                }else if(rows.length >= 0){
+                    for(let i = 0; i < rows.length; i++){
+                        let detail = JSON.parse(rows[i].detail);
+                        for(let j = 0; j < detail.length; j++){
+                            let aniId = detail[j]["id"];
+                            if(aniBuyDetail.hasOwnProperty(aniId)){
+                                aniBuyDetail[aniId] = aniBuyDetail[aniId] + detail[j]["count"]
+                            }else{
+                                aniBuyDetail[aniId] = detail[j]["count"]
+                            }
+                        }
+                    }
+                    let result = [];
+                    let detailObj = JSON.parse(reqDetail);
+                    for(let i = 0; i < detailObj.length; i++){
+                        let aniId = detailObj[i]['id'];
+                        let aniName = detailObj[i]['aniName'];
+                        let reqCount = detailObj[i]['count'];
+                        let rest = animax - aniBuyDetail[aniId];
+                        if(reqCount > rest){
+                            result.push(`${aniName}剩余可购买数量：${rest}`);
+                        }
+                    }
+                    if(result.length > 0){
+                        rejected({code: 500, msg: result.join("<br>")}); 
+                    }else{
+                        resolve(rows);
+                    }
+                }
+            })
+        }).then(function (rows) {
+            let query = `update buy set detail = '${reqDetail}', amount = ${amount}, balance = ${balance}, buildTime = '${buildTime}' where uId = ${uId} and sessionId = ${sessionId}`;
+            pool.query(query, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '购买失败，请重试' + err, data: err});
+                }else{
+                    resolve(rows);
+                }
+            })
+        }).then(function (rows) {
+            let updateUser = `update users set balance = ${balance} where id = ${uId}`;
+            pool.query(updateUser, function(err, rows){
+                if(err){
+                    rejected({code: 500, msg: '购买失败，请重试' + err, data: err});
+                }else{
+                    resolve(rows);
+                }
+            })
+        }).then(function (rows) {
+            let orderSql = `INSERT INTO uOrder(uid, uname, count, balance, datetime, type, optname, sessionName) VALUES(${uId}, "${uName}", ${amount}, ${balance}, "${buildTime}", "-", "下注", "${sessionName.split('[')[0]}")`;
+            logger.log('info', `买点：${uName}购买${sessionName} ${amount}点，剩余${balance}点`);
+            pool.query(orderSql, function(err, rows){
+                if(err){
+                    res.json({code: 500, msg: '购买失败，请重试', data: err});
+                }else{
+                    resolve(rows);
+                }
+            })
+        }).then(function (rows) {
+            let getAniTotal = `select currentTotal, rate, aniMaxCount from session where id = ${sessionId}`;
+            console.log(getAniTotal, 111)
+            pool.query(getAniTotal, function(err, rows){
+                console.log(rows, 888)
+                if(rows){
+                    let rate = rows[0].rate;
+                    let aniMaxCount = rows[0].aniMaxCount;
+
+                    let newMax = aniMaxCount;
+                    let total = rows[0].currentTotal;
+                    let currentTotal = Number(total) + Number(amount);
+                    if(currentTotal > Number(rate) * Number(aniMaxCount)){
+                        newMax = aniMaxCount * 1.2; 
+                    }
+
+                    console.log(rows[0], 99999)
+                    resolve({currentTotal: currentTotal, newMax: newMax, sessionId: sessionId});
+                }
+            })
+        }).then(function (data) {
+            console.log(data, '????????')
+            let aniTotal = `update session set currentTotal = ${data.currentTotal}, aniMaxCount = ${data.newMax} where id = ${data.sessionId}`;
+            pool.query(aniTotal, function(err, rows){
+                if(err){
+                    res.json({code: 500, msg: '购买失败，请重试', data: err});
+                }else{
+                    res.json({code: 200, msg: '购买成功！', data: rows});
+                }
+            })
+        })
 
         let getAniMax = `select aniMaxCount from session where id = ${sessionId}`;
         pool.query(getAniMax, function(err, rows){
